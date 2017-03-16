@@ -1,5 +1,5 @@
 ---
-title: JavaScript 对象、构造函数、原型链之你想知道的一切
+title: JavaScript 对象、constructor、__proto__之深入剖析
 date: 2017-03-15 14:21:04
 tags: [JavaScript, Object, __proto__, prototype, constructor]
 ---
@@ -51,4 +51,37 @@ a.__proto__ === Object.prototype   //true
 a对象只有一个\_\_proto\_\_属性，而它刚好恒等于Object.prototype，这绝不是巧合，这是new关键字起的作用，new过程中最关键的步骤就是将一个函数对象的prototype属性赋值给新的普通对象的__proto__属性，因此在a上查找属性时会向上查找a.\_\_proto\_\_属性，也就是Object.prototype属性。__因此prototype在原型链上其实没有什么作用__，假设将其它属性赋值给a.\_\_proto\_\_，它也会沿着这个属性向上查找的！！
 
 ## constructor
+我们都不陌生，constructor始终指向创建当前对象的函数，怎么理解这句话呢？
+先看新建函数对象的constructor
+```javascript
+function b(){}                             //创建新的函数对象
+b.hasOwnProperty('constructor')            //false b没有constructor直接属性，那constructor是哪里来的呢？显然是原型链嘛！！
+b.__proto__.hasOwnProperty('constructor')  //true 因此b的constructor函数最终在b.__proto__属性上， 那这个对象到底是啥呢？
+b.__proto__.constructor === Function       //true 原来我们创建一个的新函数的constructor就是JS引擎内置的对象Function!!   这货我们肯定都用过吧  new Function()
+```
+新建的普通对象的constructor比较简单，其实就是Object对象。
+```javascript
+a = {}
+a.hasOwnProperty('constructor')           //false
+a.__proto__.hasOwnProperty('constructor') //true
+a.__proto__.constructor === Object        //true
+```
 
+### constructor 和 prototype 的关系
+不论是函数对象还是普通对象，新建对象的constructor都在它的\_\_proto\_\_属性上，而上面说过\_\_proto\_\_属性恒等于构造函数的prototype属性，因此`b.constructor === Function.prototype.constructor`: __任意对象原型链上的constructor属性恒等于创建它的函数的prototype属性上的constructor属性__(不算主动修改prototype)。
+我们上次还总结过`b.__proto__.constructor === Function`，因此我们发现`Function.prototype.constructor === Function`:__每个函数对象的prototype属性的constructor都等于它自身__。
+看下面神奇的代码：
+![img](./objectfunction.png)
+嘿嘿，Chrome给a对象名字居然标为`Function`!!!，然而a其实还是一个Object对象，不信你试试`typeof a`和`a instanceof Object`。（这里涉及到typeof和instanceof的原理）
+这里稍微体现了一下constructor的微弱作用，某些应用可能会使用对象的constructor的name字段判断这个对象到底是啥，像Chrome控制台那样。
+因此使用原型继承的时候都会重置constructor属性，其实它并没有什么其他软用（有可能我不知道！！）。
+
+### constructor总结
+1. 任意对象原型链上的constructor属性恒等于创建它的函数的prototype属性上的constructor属性
+2. 每个函数对象的prototype属性的constructor都等于它自身
+
+## prototype作用
+上面基本已经提过prototype的作用了
+1. 新建函数对象默认有prototype属性
+2. 新建函数对象的prototype.constructor指向它自己
+3. 新建任意对象的\_\_proto\_\_属性恒等于创建这个对象的函数的prototype属性
